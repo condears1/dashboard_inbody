@@ -7,13 +7,26 @@ from sqlalchemy import text
 
 st.set_page_config(page_title="InBody Dashboard - Sebastian Conde", layout="wide", initial_sidebar_state="expanded")
 
-# --- ESTILOS CSS PROFESIONALES Y OCULTAR BARRA SUPERIOR ---
+# --- ESTILOS CSS: OCULTAR HERRAMIENTAS PERO MANTENER BARRA LATERAL ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-    [data-testid="stHeader"] {
-        display: none;
+    /* Ocultar botones de la esquina superior (Share, GitHub, Menú de 3 puntos) */
+    [data-testid="stToolbar"] {
+        display: none !important;
+    }
+    [data-testid="stMainMenu"] {
+        display: none !important;
+    }
+    header [data-testid="stDecoration"] {
+        display: none !important;
+    }
+
+    /* Asegurar que el botón para abrir/cerrar el panel lateral esté siempre visible */
+    [data-testid="collapsedControl"] {
+        display: block !important;
+        visibility: visible !important;
     }
 
     h1, h2, h3, h4, h5, h6, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
