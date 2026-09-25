@@ -7,12 +7,17 @@ from sqlalchemy import text
 
 st.set_page_config(page_title="InBody Dashboard - Sebastian Conde", layout="wide", initial_sidebar_state="expanded")
 
-# --- ESTILOS CSS SEGUROS (Oculta Deploy y Menú sin afectar la barra lateral) ---
+# --- ESTILOS CSS: OCULTAR GITHUB, DEPLOY Y MENÚ ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-    /* Ocultar únicamente el botón de Deploy y el menú principal de Streamlit */
+    /* Ocultar enlace/icono de GitHub en la barra superior */
+    header a[href*="github"], [data-testid="stToolbar"] a[href*="github"] {
+        display: none !important;
+    }
+
+    /* Ocultar botón de Deploy y menú principal */
     .stDeployButton {
         display: none !important;
     }
