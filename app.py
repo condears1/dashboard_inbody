@@ -5,27 +5,16 @@ from plotly.subplots import make_subplots
 import sqlalchemy as sa
 from sqlalchemy import text
 
-st.set_page_config(page_title="InBody Dashboard - Sebastian Conde", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="InBody Dashboard - Sebastian Conde", layout="wide", initial_sidebar_state="collapsed")
 
-# --- ESTILOS CSS: OCULTAR GITHUB, DEPLOY Y MENÚ ---
+# --- ESTILOS CSS: OCULTAR COMPLETAMENTE LA BARRA SUPERIOR ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-    /* Ocultar enlace/icono de GitHub en la barra superior */
-    header a[href*="github"], [data-testid="stToolbar"] a[href*="github"] {
+    /* Ocultar por completo la barra superior (Share, GitHub, Menú) */
+    [data-testid="stHeader"] {
         display: none !important;
-    }
-
-    /* Ocultar botón de Deploy y menú principal */
-    .stDeployButton {
-        display: none !important;
-    }
-    #MainMenu {
-        visibility: hidden !important;
-    }
-    footer {
-        visibility: hidden !important;
     }
 
     h1, h2, h3, h4, h5, h6, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
@@ -73,106 +62,111 @@ def get_data():
     df = pd.read_sql(query, con=engine)
     return df
 
-# --- SISTEMA DE AUTENTICACIÓN ---
-def check_password():
-    def password_entered():
-        if st.session_state["password"] == st.secrets["admin_password"]:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]
-        else:
-            st.session_state["password_correct"] = False
-
-    if "password_correct" not in st.session_state:
-        st.sidebar.text_input("Contraseña de Administrador", type="password", on_change=password_entered, key="password")
-        return False
-    elif not st.session_state["password_correct"]:
-        st.sidebar.text_input("Contraseña de Administrador", type="password", on_change=password_entered, key="password")
-        st.sidebar.error("Contraseña incorrecta")
-        return False
-    else:
-        return True
-
-# --- PANEL DE ADMINISTRACIÓN ---
-st.sidebar.header("Panel de Control")
-
-if check_password():
-    st.sidebar.success("Acceso autorizado")
-    if st.sidebar.button("Cerrar sesión"):
-        st.session_state["password_correct"] = False
-        st.rerun()
-        
-    # Formulario para nuevo registro
-    with st.sidebar.form("form_nuevo_registro", clear_on_submit=True):
-        st.subheader("Nueva Evaluación InBody")
-        fecha_nueva = st.date_input("Fecha de la evaluación")
-        peso_nuevo = st.number_input("Peso Total (kg)", min_value=50.0, max_value=150.0, step=0.1, format="%.1f")
-        musculo_nuevo = st.number_input("Masa Muscular (kg)", min_value=20.0, max_value=80.0, step=0.1, format="%.1f")
-        grasa_kg_nueva = st.number_input("Masa Grasa (kg)", min_value=5.0, max_value=80.0, step=0.1, format="%.1f")
-        grasa_pct_nueva = st.number_input("Porcentaje Grasa (%)", min_value=5.0, max_value=50.0, step=0.1, format="%.1f")
-        visceral_nueva = st.number_input("Nivel Grasa Visceral", min_value=1, max_value=30, step=1)
-        agua_nueva = st.number_input("Agua Corporal Total (L)", min_value=20.0, max_value=80.0, step=0.1, format="%.1f")
-        prot_nueva = st.number_input("Proteínas (kg)", min_value=5.0, max_value=30.0, step=0.1, format="%.1f")
-        min_nuevo = st.number_input("Minerales (kg)", min_value=1.0, max_value=10.0, step=0.01, format="%.2f")
-        imc_nuevo = st.number_input("IMC", min_value=15.0, max_value=50.0, step=0.1, format="%.1f")
-        tmb_nuevo = st.number_input("TMB (kcal)", min_value=1000, max_value=4000, step=1)
-        pts_nuevo = st.number_input("Puntuación InBody", min_value=1, max_value=120, step=1)
-        
-        btn_guardar = st.form_submit_button("Guardar en Base de Datos")
-        
-        if btn_guardar:
-            try:
-                insert_query = text("""
-                    INSERT INTO fisico.evaluaciones_inbody 
-                    (fecha_test, peso_total, masa_musculoesqueletica, masa_grasa, porcentaje_grasa, 
-                     grasa_visceral, agua_corporal, proteinas, minerales, imc, tmb, puntuacion_inbody)
-                    VALUES 
-                    (:fecha, :peso, :musculo, :grasa, :pct_grasa, :visceral, :agua, :prot, :min, :imc, :tmb, :pts)
-                """)
-                with engine.connect() as conn:
-                    conn.execute(insert_query, {
-                        "fecha": fecha_nueva, "peso": peso_nuevo, "musculo": musculo_nuevo, 
-                        "grasa": grasa_kg_nueva, "pct_grasa": grasa_pct_nueva, "visceral": visceral_nueva,
-                        "agua": agua_nueva, "prot": prot_nueva, "min": min_nuevo, "imc": imc_nuevo, 
-                        "tmb": tmb_nuevo, "pts": pts_nuevo
-                    })
-                    conn.commit()
-                st.sidebar.success("Datos guardados correctamente.")
-                st.rerun()
-            except Exception as e:
-                st.sidebar.error(f"Error al guardar: {e}")
-
-    # Sección de Eliminación de Registros por Fecha
-    st.sidebar.divider()
-    st.sidebar.subheader("Gestión de Registros")
-    df_actual = get_data()
-    if not df_actual.empty:
-        opciones_borrar = {f"{row['fecha_test']} - {row['peso_total']} kg": row['fecha_test'] for _, row in df_actual.iterrows()}
-        reg_seleccionado = st.sidebar.selectbox("Selecciona registro a eliminar", options=list(opciones_borrar.keys()))
-        
-        if st.sidebar.button("Eliminar Registro Seleccionado"):
-            fecha_a_borrar = opciones_borrar[reg_seleccionado]
-            try:
-                delete_query = text("DELETE FROM fisico.evaluaciones_inbody WHERE fecha_test = :fecha_val")
-                with engine.connect() as conn:
-                    conn.execute(delete_query, {"fecha_val": fecha_a_borrar})
-                    conn.commit()
-                st.sidebar.success("Registro eliminado con éxito.")
-                st.rerun()
-            except Exception as e:
-                st.sidebar.error(f"Error al eliminar: {e}")
-else:
-    st.sidebar.info("Ingresa la contraseña para gestionar evaluaciones.")
-
-# --- ENCABEZADO CON INFORMACIÓN DE USUARIO ---
+# --- ENCABEZADO Y TÍTULO PRINCIPAL ---
 st.title("Sebastian Conde | Análisis de Composición Corporal")
 st.markdown("**Género:** Masculino | **Edad:** 25 años | **Altura:** 174 cm | **Objetivo:** 195 lbs (~88.45 kg)")
+
+# --- PANEL DE ADMINISTRACIÓN DESPLEGABLE EN EL CUERPO ---
+with st.expander("🔐 Panel de Administración (Ingresar Contraseña y Gestionar Datos)", expanded=False):
+    def check_password():
+        def password_entered():
+            if st.session_state["password"] == st.secrets["admin_password"]:
+                st.session_state["password_correct"] = True
+                del st.session_state["password"]
+            else:
+                st.session_state["password_correct"] = False
+
+        if "password_correct" not in st.session_state:
+            st.text_input("Contraseña de Administrador", type="password", on_change=password_entered, key="password")
+            return False
+        elif not st.session_state["password_correct"]:
+            st.text_input("Contraseña de Administrador", type="password", on_change=password_entered, key="password")
+            st.error("Contraseña incorrecta")
+            return False
+        else:
+            return True
+
+    if check_password():
+        st.success("Acceso autorizado")
+        if st.button("Cerrar sesión"):
+            st.session_state["password_correct"] = False
+            st.rerun()
+            
+        # Formulario para nuevo registro
+        with st.form("form_nuevo_registro", clear_on_submit=True):
+            st.subheader("Nueva Evaluación InBody")
+            col_f1, col_f2, col_f3 = st.columns(3)
+            with col_f1:
+                fecha_nueva = st.date_input("Fecha de la evaluación")
+                peso_nuevo = st.number_input("Peso Total (kg)", min_value=50.0, max_value=150.0, step=0.1, format="%.1f")
+                musculo_nuevo = st.number_input("Masa Muscular (kg)", min_value=20.0, max_value=80.0, step=0.1, format="%.1f")
+            with col_f2:
+                grasa_kg_nueva = st.number_input("Masa Grasa (kg)", min_value=5.0, max_value=80.0, step=0.1, format="%.1f")
+                grasa_pct_nueva = st.number_input("Porcentaje Grasa (%)", min_value=5.0, max_value=50.0, step=0.1, format="%.1f")
+                visceral_nueva = st.number_input("Nivel Grasa Visceral", min_value=1, max_value=30, step=1)
+            with col_f3:
+                agua_nueva = st.number_input("Agua Corporal Total (L)", min_value=20.0, max_value=80.0, step=0.1, format="%.1f")
+                prot_nueva = st.number_input("Proteínas (kg)", min_value=5.0, max_value=30.0, step=0.1, format="%.1f")
+                min_nuevo = st.number_input("Minerales (kg)", min_value=1.0, max_value=10.0, step=0.01, format="%.2f")
+            
+            col_f4, col_f5 = st.columns(2)
+            with col_f4:
+                imc_nuevo = st.number_input("IMC", min_value=15.0, max_value=50.0, step=0.1, format="%.1f")
+                tmb_nuevo = st.number_input("TMB (kcal)", min_value=1000, max_value=4000, step=1)
+            with col_f5:
+                pts_nuevo = st.number_input("Puntuación InBody", min_value=1, max_value=120, step=1)
+            
+            btn_guardar = st.form_submit_button("Guardar en Base de Datos")
+            
+            if btn_guardar:
+                try:
+                    insert_query = text("""
+                        INSERT INTO fisico.evaluaciones_inbody 
+                        (fecha_test, peso_total, masa_musculoesqueletica, masa_grasa, porcentaje_grasa, 
+                         grasa_visceral, agua_corporal, proteinas, minerales, imc, tmb, puntuacion_inbody)
+                        VALUES 
+                        (:fecha, :peso, :musculo, :grasa, :pct_grasa, :visceral, :agua, :prot, :min, :imc, :tmb, :pts)
+                    """)
+                    with engine.connect() as conn:
+                        conn.execute(insert_query, {
+                            "fecha": fecha_nueva, "peso": peso_nuevo, "musculo": musculo_nuevo, 
+                            "grasa": grasa_kg_nueva, "pct_grasa": grasa_pct_nueva, "visceral": visceral_nueva,
+                            "agua": agua_nueva, "prot": prot_nueva, "min": min_nuevo, "imc": imc_nuevo, 
+                            "tmb": tmb_nuevo, "pts": pts_nuevo
+                        })
+                        conn.commit()
+                    st.success("Datos guardados correctamente.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error al guardar: {e}")
+
+        # Sección de Eliminación de Registros por Fecha
+        st.divider()
+        st.subheader("Gestión y Borrado de Registros de Prueba")
+        df_actual = get_data()
+        if not df_actual.empty:
+            opciones_borrar = {f"{row['fecha_test']} - {row['peso_total']} kg": row['fecha_test'] for _, row in df_actual.iterrows()}
+            reg_seleccionado = st.selectbox("Selecciona registro a eliminar", options=list(opciones_borrar.keys()))
+            
+            if st.button("Eliminar Registro Seleccionado"):
+                fecha_a_borrar = opciones_borrar[reg_seleccionado]
+                try:
+                    delete_query = text("DELETE FROM fisico.evaluaciones_inbody WHERE fecha_test = :fecha_val")
+                    with engine.connect() as conn:
+                        conn.execute(delete_query, {"fecha_val": fecha_a_borrar})
+                        conn.commit()
+                    st.success("Registro eliminado con éxito.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error al eliminar: {e}")
+
 st.divider()
 
 # --- LECTURA DE DATOS ---
 df = get_data()
 
 if df.empty:
-    st.info("No hay datos registrados en la base de datos. Utiliza el panel izquierdo para ingresar tus primeras evaluaciones.")
+    st.info("No hay datos registrados en la base de datos. Utiliza el Panel de Administración superior para ingresar tus evaluaciones.")
 else:
     # --- KPIS AMPLIADOS ---
     st.markdown('<div class="section-title"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Estado Actual (Última Evaluación)</div>', unsafe_allow_html=True)
