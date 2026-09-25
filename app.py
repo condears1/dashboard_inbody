@@ -7,12 +7,11 @@ from sqlalchemy import text
 
 st.set_page_config(page_title="InBody Dashboard - Sebastian Conde", layout="wide", initial_sidebar_state="collapsed")
 
-# --- ESTILOS CSS: OCULTAR COMPLETAMENTE LA BARRA SUPERIOR Y DISEÑO DISCRETO ---
+# --- ESTILOS CSS: OCULTAR COMPLETAMENTE LA BARRA SUPERIOR ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-    /* Ocultar barra superior de Streamlit (Share, GitHub, Menú) */
     [data-testid="stHeader"] {
         display: none !important;
     }
@@ -228,7 +227,7 @@ else:
     df_display['fecha_test'] = pd.to_datetime(df_display['fecha_test']).dt.strftime('%d.%m.%Y')
     st.dataframe(df_display, use_container_width=True)
 
-# --- PIE DE PÁGINA Y PANEL DE ADMINISTRACIÓN DISCRETO ---
+# --- PIE DE PÁGINA ---
 st.divider()
 st.markdown("""
 <div style="text-align: center; color: #888888; font-family: 'Rajdhani', sans-serif; font-size: 1.1em;">
@@ -237,10 +236,11 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
-
-# Panel de administración ultra discreto ubicado al fondo
-with st.expander("🔒", expanded=False):
+# --- PANEL DE ADMINISTRACIÓN OCULTO POR QUERY PARAM (?admin=true) ---
+if st.query_params.get("admin") == "true":
+    st.markdown("---")
+    st.subheader("🔐 Panel de Administración Secreto")
+    
     def check_password():
         def password_entered():
             if st.session_state["password"] == st.secrets["admin_password"]:
