@@ -12,7 +12,6 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-    /* Ocultar la barra superior de Streamlit (Share, GitHub, Menú) */
     [data-testid="stHeader"] {
         display: none;
     }
@@ -130,20 +129,20 @@ if check_password():
             except Exception as e:
                 st.sidebar.error(f"Error al guardar: {e}")
 
-    # Sección de Eliminación de Registros de Prueba
+    # Sección de Eliminación de Registros por Fecha
     st.sidebar.divider()
     st.sidebar.subheader("Gestión de Registros")
     df_actual = get_data()
     if not df_actual.empty:
-        opciones_borrar = {f"{row['fecha_test']} - {row['peso_total']} kg (ID: {row['id']})": row['id'] for _, row in df_actual.iterrows()}
+        opciones_borrar = {f"{row['fecha_test']} - {row['peso_total']} kg": row['fecha_test'] for _, row in df_actual.iterrows()}
         reg_seleccionado = st.sidebar.selectbox("Selecciona registro a eliminar", options=list(opciones_borrar.keys()))
         
         if st.sidebar.button("Eliminar Registro Seleccionado"):
-            id_a_borrar = opciones_borrar[reg_seleccionado]
+            fecha_a_borrar = opciones_borrar[reg_seleccionado]
             try:
-                delete_query = text("DELETE FROM fisico.evaluaciones_inbody WHERE id = :id_val")
+                delete_query = text("DELETE FROM fisico.evaluaciones_inbody WHERE fecha_test = :fecha_val")
                 with engine.connect() as conn:
-                    conn.execute(delete_query, {"id_val": id_a_borrar})
+                    conn.execute(delete_query, {"fecha_val": fecha_a_borrar})
                     conn.commit()
                 st.sidebar.success("Registro eliminado con éxito.")
                 st.rerun()
