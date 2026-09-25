@@ -7,26 +7,20 @@ from sqlalchemy import text
 
 st.set_page_config(page_title="InBody Dashboard - Sebastian Conde", layout="wide", initial_sidebar_state="expanded")
 
-# --- ESTILOS CSS: OCULTAR HERRAMIENTAS PERO MANTENER BARRA LATERAL ---
+# --- ESTILOS CSS SEGUROS (Oculta Deploy y Menú sin afectar la barra lateral) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-    /* Ocultar botones de la esquina superior (Share, GitHub, Menú de 3 puntos) */
-    [data-testid="stToolbar"] {
+    /* Ocultar únicamente el botón de Deploy y el menú principal de Streamlit */
+    .stDeployButton {
         display: none !important;
     }
-    [data-testid="stMainMenu"] {
-        display: none !important;
+    #MainMenu {
+        visibility: hidden !important;
     }
-    header [data-testid="stDecoration"] {
-        display: none !important;
-    }
-
-    /* Asegurar que el botón para abrir/cerrar el panel lateral esté siempre visible */
-    [data-testid="collapsedControl"] {
-        display: block !important;
-        visibility: visible !important;
+    footer {
+        visibility: hidden !important;
     }
 
     h1, h2, h3, h4, h5, h6, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
