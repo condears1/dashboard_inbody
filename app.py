@@ -7,10 +7,15 @@ from sqlalchemy import text
 
 st.set_page_config(page_title="InBody Dashboard - Sebastian Conde", layout="wide", initial_sidebar_state="expanded")
 
-# --- ESTILOS CSS PROFESIONALES Y TIPOGRAFÍA ---
+# --- ESTILOS CSS PROFESIONALES Y OCULTAR BARRA SUPERIOR ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+    /* Ocultar la barra superior de Streamlit (Share, GitHub, Menú) */
+    [data-testid="stHeader"] {
+        display: none;
+    }
 
     h1, h2, h3, h4, h5, h6, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
         font-family: 'Rajdhani', sans-serif !important;
@@ -85,6 +90,7 @@ if check_password():
         st.session_state["password_correct"] = False
         st.rerun()
         
+    # Formulario para nuevo registro
     with st.sidebar.form("form_nuevo_registro", clear_on_submit=True):
         st.subheader("Nueva Evaluación InBody")
         fecha_nueva = st.date_input("Fecha de la evaluación")
@@ -119,12 +125,32 @@ if check_password():
                         "tmb": tmb_nuevo, "pts": pts_nuevo
                     })
                     conn.commit()
-                st.sidebar.success("Datos guardados y campos limpios correctamente.")
+                st.sidebar.success("Datos guardados correctamente.")
                 st.rerun()
             except Exception as e:
                 st.sidebar.error(f"Error al guardar: {e}")
+
+    # Sección de Eliminación de Registros de Prueba
+    st.sidebar.divider()
+    st.sidebar.subheader("Gestión de Registros")
+    df_actual = get_data()
+    if not df_actual.empty:
+        opciones_borrar = {f"{row['fecha_test']} - {row['peso_total']} kg (ID: {row['id']})": row['id'] for _, row in df_actual.iterrows()}
+        reg_seleccionado = st.sidebar.selectbox("Selecciona registro a eliminar", options=list(opciones_borrar.keys()))
+        
+        if st.sidebar.button("Eliminar Registro Seleccionado"):
+            id_a_borrar = opciones_borrar[reg_seleccionado]
+            try:
+                delete_query = text("DELETE FROM fisico.evaluaciones_inbody WHERE id = :id_val")
+                with engine.connect() as conn:
+                    conn.execute(delete_query, {"id_val": id_a_borrar})
+                    conn.commit()
+                st.sidebar.success("Registro eliminado con éxito.")
+                st.rerun()
+            except Exception as e:
+                st.sidebar.error(f"Error al eliminar: {e}")
 else:
-    st.sidebar.info("Ingresa la contraseña para agregar nuevas evaluaciones.")
+    st.sidebar.info("Ingresa la contraseña para gestionar evaluaciones.")
 
 # --- ENCABEZADO CON INFORMACIÓN DE USUARIO ---
 st.title("Sebastian Conde | Análisis de Composición Corporal")
@@ -212,7 +238,7 @@ else:
             st.write(f"- Peso: {ultima['peso_total']} kg | Grasa Corp: {ultima['masa_grasa']} kg | Músculo Esquelético: {ultima['masa_musculoesqueletica']} kg")
             
         st.markdown("""
-        > **Análisis Segmental:** El comparativo entre los últimos dos registros refleja una tendencia positiva en la oxidación de tejido adiposo (-1.7 kg de masa grasa). Sin embargo, se observa una ligera contracción en el tejido magro global que amerita supervisión estricta en el consumo calórico diario y un control riguroso de la sobrecarga progresiva en los entrenamientos de hipertrofia.
+        > **Análisis Segmental:** El comparativo entre los últimos dos registros refleja una tendencia positiva en la oxidación de tejido adiposo. Se observa estabilidad en el tejido magro global, lo cual ratifica la correcta ejecución del protocolo de déficit e hipertrofia.
         """)
     else:
         st.warning("Se necesitan al menos dos registros en la base de datos para mostrar el comparativo segmental.")
