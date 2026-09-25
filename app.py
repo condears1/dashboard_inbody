@@ -205,8 +205,8 @@ else:
 
     st.divider()
 
-    # --- RUTINA ARNOLD SPLIT ---
-    st.markdown('<div class="section-title"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M6.5 2v4M17.5 2v4M6.5 18v4M17.5 18v4"/></svg> Rutina Actual: Arnold Split (6 Días por Semana)</div>', unsafe_allow_html=True)
+    # --- RUTINA PPL ---
+    st.markdown('<div class="section-title"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M6.5 2v4M17.5 2v4M6.5 18v4M17.5 18v4"/></svg> Rutina Actual: PPL (6 Días por Semana)</div>', unsafe_allow_html=True)
     st.markdown("""
     * **Metodología:** Hipertrofia con sobrecarga progresiva, buscando el peso máximo al fallo absoluto en un rango de **6 a 10 repeticiones**. 
     * **Estructura de Series:** 3 series de trabajo efectivo al fallo por cada ejercicio listado.
